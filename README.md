@@ -1,18 +1,25 @@
 # Riff — a knockoff Spotify web player
 
-Drop your own mp3 files in and play them in the browser. No accounts, no server, no uploads:
-tracks (and their ID3 tags + cover art) are stored locally in your browser's IndexedDB, so the
-app can be deployed anywhere static — including Vercel's free tier.
+Upload your own mp3s, organize them into playlists, and share those playlists publicly so
+anyone can listen. Next.js + Supabase (auth, Postgres, storage); deploys to Vercel.
 
 ## Features
 
-- Add music by drag-and-drop or the "Add music" button (mp3, m4a, flac, ogg, wav)
-- ID3 tag reading for title / artist / album / cover art, with filename fallback
-- Persistent library in IndexedDB — survives reloads
-- Player bar with play/pause, next/previous, seek, volume, shuffle, repeat (off/all/one)
-- Search across title, artist, album and filename; delete tracks
+- Email/password sign up, sign in, log out
+- Upload mp3/m4a/flac/ogg/wav; ID3 tags (title/artist/album/cover art) read in the browser
+- Playlists, each toggleable between public and private
+- Browse page listing every public playlist with its owner — playable without an account
+- Player bar: play/pause, next/previous, seek, volume, shuffle, repeat (off/all/one)
 
-## Run locally
+## Setup
+
+1. Create a free project at https://supabase.com.
+2. In the SQL editor, run [`supabase/schema.sql`](supabase/schema.sql). It creates the tables,
+   row-level-security policies, the `media` storage bucket, and a trigger that creates a
+   profile row for each new user.
+3. Copy `.env.example` to `.env.local` and fill in the project URL and anon key from
+   Project Settings → API.
+4. Install and run:
 
 ```bash
 npm install
@@ -21,18 +28,16 @@ npm run dev
 
 Open http://localhost:3000.
 
+Optional: in Supabase → Authentication → Providers → Email, turn off "Confirm email" if you
+want sign-ups to be usable immediately without an inbox round-trip.
+
 ## Deploy
 
-```bash
-npm i -g vercel
-vercel
-```
+Push to GitHub and import the repo on Vercel, setting `NEXT_PUBLIC_SUPABASE_URL` and
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` as environment variables. No other backend is needed.
 
-Any static-friendly host works (Vercel, Netlify, Cloudflare Pages). There is no backend.
+## How sharing works
 
-## Notes / limits
-
-- The library lives in the browser it was added from — it is not shared between devices or
-  browsers. To sync a library across devices, swap the IndexedDB layer in `src/lib/db.ts` for
-  object storage (e.g. Vercel Blob or S3) plus a small API route.
-- Browser storage quota is typically a few GB per origin; large libraries may hit it.
+Audio lives in the public `media` bucket under `<user-id>/<track-id>.<ext>`; storage policies
+only allow writes and deletes inside your own folder. Playlist rows are readable by everyone
+when `is_public` is true, so public playlists stream for signed-out visitors too.

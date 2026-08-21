@@ -17,7 +17,6 @@ import { formatTime } from "@/lib/format";
 export function PlayerBar() {
   const {
     currentTrack,
-    coverUrls,
     isPlaying,
     progress,
     volume,
@@ -33,7 +32,7 @@ export function PlayerBar() {
   } = usePlayer();
 
   const duration = currentTrack?.duration ?? 0;
-  const cover = currentTrack ? coverUrls[currentTrack.id] : undefined;
+  const cover = currentTrack?.coverUrl;
 
   return (
     <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-800 bg-neutral-950/95 px-4 py-3 backdrop-blur sm:px-6">

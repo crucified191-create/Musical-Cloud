@@ -9,25 +9,20 @@ import {
   useRef,
   useState,
 } from "react";
-import { deleteTrack, getAllTracks, type Track } from "@/lib/db";
-import { importFile, isAudioFile } from "@/lib/import";
+import type { Track } from "@/lib/library";
 
 export type RepeatMode = "off" | "all" | "one";
 
 type PlayerState = {
-  tracks: Track[];
-  coverUrls: Record<string, string>;
-  loading: boolean;
-  importing: { done: number; total: number } | null;
+  queue: Track[];
   currentTrack: Track | null;
   isPlaying: boolean;
   progress: number;
   volume: number;
   shuffle: boolean;
   repeat: RepeatMode;
-  addFiles: (files: FileList | File[]) => Promise<void>;
-  removeTrack: (id: string) => Promise<void>;
-  playTrack: (id: string) => void;
+  playQueue: (tracks: Track[], startIndex: number) => void;
+  toggleTrack: (tracks: Track[], index: number) => void;
   togglePlay: () => void;
   playNext: () => void;
   playPrevious: () => void;
@@ -47,11 +42,8 @@ export function usePlayer(): PlayerState {
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const objectUrlRef = useRef<string | null>(null);
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [importing, setImporting] = useState<{ done: number; total: number } | null>(null);
-  const [currentId, setCurrentId] = useState<string | null>(null);
+  const [queue, setQueue] = useState<Track[]>([]);
+  const [index, setIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [volume, setVolumeState] = useState(1);
@@ -59,8 +51,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [repeat, setRepeat] = useState<RepeatMode>("off");
 
   useEffect(() => {
-    audioRef.current = new Audio();
-    const audio = audioRef.current;
+    const audio = new Audio();
+    audioRef.current = audio;
     const onTimeUpdate = () => setProgress(audio.currentTime);
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
@@ -72,93 +64,63 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
       audio.pause();
-      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
     };
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    getAllTracks()
-      .then((stored) => {
-        if (!cancelled) setTracks(stored);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const currentTrack = index >= 0 && index < queue.length ? queue[index] : null;
 
-  const coverUrls = useMemo(() => {
-    const urls: Record<string, string> = {};
-    for (const track of tracks) {
-      if (track.cover) urls[track.id] = URL.createObjectURL(track.cover);
-    }
-    return urls;
-  }, [tracks]);
-
-  useEffect(
-    () => () => {
-      for (const url of Object.values(coverUrls)) URL.revokeObjectURL(url);
-    },
-    [coverUrls],
-  );
-
-  const currentTrack = useMemo(
-    () => tracks.find((track) => track.id === currentId) ?? null,
-    [tracks, currentId],
-  );
-
-  const load = useCallback((track: Track, autoplay: boolean) => {
+  const start = useCallback((tracks: Track[], startIndex: number) => {
     const audio = audioRef.current;
-    if (!audio) return;
-    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-    const url = URL.createObjectURL(track.data);
-    objectUrlRef.current = url;
-    audio.src = url;
-    setCurrentId(track.id);
+    if (!audio || tracks.length === 0) return;
+    const target = tracks[startIndex];
+    if (!target) return;
+    setQueue(tracks);
+    setIndex(startIndex);
     setProgress(0);
-    if (autoplay) void audio.play().catch(() => setIsPlaying(false));
+    audio.src = target.audioUrl;
+    void audio.play().catch(() => setIsPlaying(false));
   }, []);
 
-  const playTrack = useCallback(
-    (id: string) => {
+  const toggleTrack = useCallback(
+    (tracks: Track[], targetIndex: number) => {
       const audio = audioRef.current;
       if (!audio) return;
-      if (id === currentId) {
+      const target = tracks[targetIndex];
+      if (!target) return;
+      if (currentTrack?.id === target.id) {
         if (audio.paused) void audio.play().catch(() => setIsPlaying(false));
         else audio.pause();
         return;
       }
-      const track = tracks.find((item) => item.id === id);
-      if (track) load(track, true);
+      start(tracks, targetIndex);
     },
-    [currentId, load, tracks],
+    [currentTrack, start],
   );
 
-  const pickNext = useCallback(
+  const step = useCallback(
     (offset: number) => {
-      if (tracks.length === 0) return null;
-      if (shuffle && tracks.length > 1) {
-        let index = Math.floor(Math.random() * tracks.length);
-        if (tracks[index].id === currentId) index = (index + 1) % tracks.length;
-        return tracks[index];
+      if (queue.length === 0) return;
+      if (shuffle && queue.length > 1) {
+        let next = Math.floor(Math.random() * queue.length);
+        if (next === index) next = (next + 1) % queue.length;
+        start(queue, next);
+        return;
       }
-      const index = tracks.findIndex((track) => track.id === currentId);
-      if (index === -1) return tracks[0];
-      const nextIndex = index + offset;
-      if (nextIndex < 0) return tracks[tracks.length - 1];
-      if (nextIndex >= tracks.length) return repeat === "all" ? tracks[0] : null;
-      return tracks[nextIndex];
+      const next = index + offset;
+      if (next < 0) {
+        start(queue, queue.length - 1);
+        return;
+      }
+      if (next >= queue.length) {
+        if (repeat === "all") start(queue, 0);
+        return;
+      }
+      start(queue, next);
     },
-    [currentId, repeat, shuffle, tracks],
+    [index, queue, repeat, shuffle, start],
   );
 
-  const playNext = useCallback(() => {
-    const next = pickNext(1);
-    if (next) load(next, true);
-  }, [load, pickNext]);
+  const playNext = useCallback(() => step(1), [step]);
 
   const playPrevious = useCallback(() => {
     const audio = audioRef.current;
@@ -166,9 +128,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       audio.currentTime = 0;
       return;
     }
-    const previous = pickNext(-1);
-    if (previous) load(previous, true);
-  }, [load, pickNext]);
+    step(-1);
+  }, [step]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -185,46 +146,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => audio.removeEventListener("ended", onEnded);
   }, [playNext, repeat]);
 
-  const addFiles = useCallback(async (files: FileList | File[]) => {
-    const audioFiles = Array.from(files).filter(isAudioFile);
-    if (audioFiles.length === 0) return;
-    setImporting({ done: 0, total: audioFiles.length });
-    const imported: Track[] = [];
-    for (const [index, file] of audioFiles.entries()) {
-      try {
-        imported.push(await importFile(file));
-      } catch (error) {
-        console.error(`Failed to import ${file.name}`, error);
-      }
-      setImporting({ done: index + 1, total: audioFiles.length });
-    }
-    setTracks((previous) => [...imported.reverse(), ...previous]);
-    setImporting(null);
-  }, []);
-
-  const removeTrack = useCallback(
-    async (id: string) => {
-      await deleteTrack(id);
-      setTracks((previous) => previous.filter((track) => track.id !== id));
-      if (id === currentId) {
-        audioRef.current?.pause();
-        setCurrentId(null);
-        setProgress(0);
-      }
-    },
-    [currentId],
-  );
-
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (!currentId) {
-      if (tracks.length > 0) load(tracks[0], true);
+    if (!currentTrack) {
+      if (queue.length > 0) start(queue, 0);
       return;
     }
     if (audio.paused) void audio.play().catch(() => setIsPlaying(false));
     else audio.pause();
-  }, [currentId, load, tracks]);
+  }, [currentTrack, queue, start]);
 
   const seek = useCallback((seconds: number) => {
     const audio = audioRef.current;
@@ -245,28 +176,44 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const value: PlayerState = {
-    tracks,
-    coverUrls,
-    loading,
-    importing,
-    currentTrack,
-    isPlaying,
-    progress,
-    volume,
-    shuffle,
-    repeat,
-    addFiles,
-    removeTrack,
-    playTrack,
-    togglePlay,
-    playNext,
-    playPrevious,
-    seek,
-    setVolume,
-    toggleShuffle,
-    cycleRepeat,
-  };
+  const value = useMemo<PlayerState>(
+    () => ({
+      queue,
+      currentTrack,
+      isPlaying,
+      progress,
+      volume,
+      shuffle,
+      repeat,
+      playQueue: start,
+      toggleTrack,
+      togglePlay,
+      playNext,
+      playPrevious,
+      seek,
+      setVolume,
+      toggleShuffle,
+      cycleRepeat,
+    }),
+    [
+      queue,
+      currentTrack,
+      isPlaying,
+      progress,
+      volume,
+      shuffle,
+      repeat,
+      start,
+      toggleTrack,
+      togglePlay,
+      playNext,
+      playPrevious,
+      seek,
+      setVolume,
+      toggleShuffle,
+      cycleRepeat,
+    ],
+  );
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 }
