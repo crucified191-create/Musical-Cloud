@@ -5,7 +5,7 @@ anyone can listen. Next.js + Supabase (auth, Postgres, storage); deploys to Verc
 
 ## Features
 
-- Email/password sign up, sign in, log out, plus Google and Apple sign-in
+- Email/password sign up, sign in, log out, plus Google sign-in
 - Upload mp3/m4a/flac/ogg/wav; ID3 tags (title/artist/album/cover art) read in the browser
 - Playlists, each toggleable between public and private
 - Browse page listing every public playlist with its owner — playable without an account
@@ -31,19 +31,18 @@ Open http://localhost:3000.
 Optional: in Supabase → Authentication → Providers → Email, turn off "Confirm email" if you
 want sign-ups to be usable immediately without an inbox round-trip.
 
-## Google / Apple sign-in
+## Google sign-in
 
 The login page asks Supabase which providers are enabled and only starts an OAuth flow for
-those; the buttons explain what to switch on otherwise. Both redirect back to `/auth/callback`,
-which exchanges the code for a session.
+those; the button explains what to switch on otherwise. Google redirects back to
+`/auth/callback`, which exchanges the code for a session. Adding another provider is a matter
+of enabling it in Supabase and appending an entry to `PROVIDERS` in `src/app/login/page.tsx`.
 
-1. Supabase → Authentication → Providers → Google (or Apple) → enable, then paste the client
-   ID and secret. Copy the callback URL Supabase shows you.
-2. Google: create an OAuth client (type "Web application") at
+1. Supabase → Authentication → Providers → Google → enable, then paste the client ID and
+   secret. Copy the callback URL Supabase shows you.
+2. Create an OAuth client (type "Web application") at
    https://console.cloud.google.com/apis/credentials, configure the consent screen, and add
    that Supabase callback URL as an authorized redirect URI.
-   Apple: requires a paid Apple Developer account — create a Services ID and a Sign in with
-   Apple key, and register the same callback URL as the return URL.
 3. Supabase → Authentication → URL Configuration: set Site URL to your deployed origin and add
    `http://localhost:3000` under Redirect URLs so local sign-in works too.
 
