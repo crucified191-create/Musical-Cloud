@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Riff — a knockoff Spotify web player
 
-## Getting Started
+Upload your own mp3s, organize them into playlists, and share those playlists publicly so
+anyone can listen. Next.js + Supabase (auth, Postgres, storage); deploys to Vercel.
 
-First, run the development server:
+## Features
+
+- Email/password sign up, sign in, log out
+- Upload mp3/m4a/flac/ogg/wav; ID3 tags (title/artist/album/cover art) read in the browser
+- Playlists, each toggleable between public and private
+- Browse page listing every public playlist with its owner — playable without an account
+- Player bar: play/pause, next/previous, seek, volume, shuffle, repeat (off/all/one)
+
+## Setup
+
+1. Create a free project at https://supabase.com.
+2. In the SQL editor, run [`supabase/schema.sql`](supabase/schema.sql). It creates the tables,
+   row-level-security policies, the `media` storage bucket, and a trigger that creates a
+   profile row for each new user.
+3. Copy `.env.example` to `.env.local` and fill in the project URL and anon key from
+   Project Settings → API.
+4. Install and run:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Optional: in Supabase → Authentication → Providers → Email, turn off "Confirm email" if you
+want sign-ups to be usable immediately without an inbox round-trip.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy
 
-## Learn More
+Push to GitHub and import the repo on Vercel, setting `NEXT_PUBLIC_SUPABASE_URL` and
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` as environment variables. No other backend is needed.
 
-To learn more about Next.js, take a look at the following resources:
+## How sharing works
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Audio lives in the public `media` bucket under `<user-id>/<track-id>.<ext>`; storage policies
+only allow writes and deletes inside your own folder. Playlist rows are readable by everyone
+when `is_public` is true, so public playlists stream for signed-out visitors too.
