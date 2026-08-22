@@ -4,12 +4,15 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
+export type OAuthProvider = "google" | "apple";
+
 type AuthState = {
   user: User | null;
   displayName: string;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<string | null>;
+  signInWithOAuth: (provider: OAuthProvider) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -23,8 +26,11 @@ export function useAuth(): AuthState {
 
 function nameOf(user: User | null): string {
   if (!user) return "";
-  const metaName = user.user_metadata?.display_name;
-  if (typeof metaName === "string" && metaName) return metaName;
+  const metadata = user.user_metadata ?? {};
+  for (const key of ["display_name", "full_name", "name"]) {
+    const value = metadata[key];
+    if (typeof value === "string" && value) return value;
+  }
   return user.email?.split("@")[0] ?? "You";
 }
 
@@ -63,6 +69,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const signInWithOAuth = useCallback(async (provider: OAuthProvider) => {
+    const { error } = await getSupabaseClient().auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) throw error;
+  }, []);
+
   const signOut = useCallback(async () => {
     const { error } = await getSupabaseClient().auth.signOut();
     if (error) throw error;
@@ -75,9 +89,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       signIn,
       signUp,
+      signInWithOAuth,
       signOut,
     }),
-    [session, loading, signIn, signUp, signOut],
+    [session, loading, signIn, signUp, signInWithOAuth, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
