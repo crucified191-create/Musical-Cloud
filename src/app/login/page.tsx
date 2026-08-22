@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AppleIcon, GoogleIcon } from "@/components/icons";
+import { GoogleIcon } from "@/components/icons";
 import { useAuth, type OAuthProvider } from "@/components/auth-provider";
 import { fetchEnabledOAuthProviders } from "@/lib/supabase/client";
 
@@ -11,7 +11,6 @@ type Mode = "signin" | "signup";
 
 const PROVIDERS: { id: OAuthProvider; label: string; icon: React.ReactNode }[] = [
   { id: "google", label: "Continue with Google", icon: <GoogleIcon className="h-4 w-4" /> },
-  { id: "apple", label: "Continue with Apple", icon: <AppleIcon className="h-4 w-4" /> },
 ];
 
 function readableError(caught: unknown): string {
