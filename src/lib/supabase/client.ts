@@ -10,6 +10,22 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
 let client: SupabaseClient<Database> | null = null;
 
+type AuthSettings = { external?: Record<string, boolean> };
+
+export async function fetchEnabledOAuthProviders(): Promise<Set<string>> {
+  if (!isSupabaseConfigured) return new Set();
+  const response = await fetch(`${supabaseUrl}/auth/v1/settings`, {
+    headers: { apikey: supabaseAnonKey },
+  });
+  if (!response.ok) return new Set();
+  const settings = (await response.json()) as AuthSettings;
+  return new Set(
+    Object.entries(settings.external ?? {})
+      .filter(([, enabled]) => enabled)
+      .map(([name]) => name),
+  );
+}
+
 export function getSupabaseClient(): SupabaseClient<Database> {
   if (!isSupabaseConfigured) {
     throw new Error(
