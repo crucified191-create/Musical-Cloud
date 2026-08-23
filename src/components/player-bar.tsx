@@ -14,6 +14,7 @@ import {
 } from "@/components/icons";
 import { formatTime } from "@/lib/format";
 import { LyricsPanel } from "@/components/lyrics-panel";
+import { PlayerExtras } from "@/components/player-extras";
 
 export function PlayerBar() {
   const {
@@ -136,6 +137,7 @@ export function PlayerBar() {
       </div>
       </footer>
       <LyricsPanel />
+      <PlayerExtras />
     </>
   );
 }
