@@ -13,6 +13,7 @@ import {
   VolumeIcon,
   QueueIcon,
   FullscreenIcon,
+  LyricsIcon,
 } from "@/components/icons";
 import { formatTime } from "@/lib/format";
 import { LyricsPanel } from "@/components/lyrics-panel";
@@ -95,6 +96,7 @@ export function PlayerBar() {
             >
               <NextIcon className="h-5 w-5" />
             </button>
+            {isInstalled("lyrics-lrc") ? <button type="button" disabled={!currentTrack} onClick={() => window.dispatchEvent(new Event("riff:open-lyrics"))} aria-label="Open lyrics" className="rounded p-2 text-neutral-400 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-35"><LyricsIcon className="h-4 w-4" /></button> : null}
             <button
               type="button"
               onClick={cycleRepeat}
