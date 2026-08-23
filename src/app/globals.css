@@ -180,15 +180,50 @@ body {
     position: fixed;
     inset: 0 auto 0 0;
     z-index: 25;
-    width: 16.5rem;
+    width: var(--riff-sidebar-width, 16.5rem);
     padding: 1.5rem 1rem;
     border-right: 1px solid var(--border);
     border-bottom: 0;
   }
   :root[data-layout="apple"] .app-shell > main,
-  :root[data-layout="spotify"] .app-shell > main { margin-left: 16.5rem; }
+  :root[data-layout="spotify"] .app-shell > main { margin-left: var(--riff-sidebar-width, 16.5rem); }
   :root[data-layout="apple"] .app-shell > footer,
-  :root[data-layout="spotify"] .app-shell > footer { left: 16.5rem; }
+  :root[data-layout="spotify"] .app-shell > footer { left: var(--riff-sidebar-width, 16.5rem); }
 }
 :root .accent-border { border-color: var(--accent); }
 :root .accent-text { color: var(--accent); }
+
+@media (min-width: 900px) {
+  .sidebar-resizer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--riff-sidebar-width, 16.5rem) - 4px);
+    z-index: 35;
+    width: 8px;
+    cursor: col-resize;
+    touch-action: none;
+  }
+  .sidebar-resizer::after {
+    position: absolute;
+    top: 50%;
+    left: 2px;
+    width: 4px;
+    height: 4rem;
+    border-radius: 999px;
+    background: var(--border);
+    content: "";
+    opacity: 0;
+    transition: opacity 150ms ease, background-color 150ms ease;
+  }
+  .sidebar-resizer:hover::after,
+  body.sidebar-resizing .sidebar-resizer::after {
+    background: var(--accent);
+    opacity: 1;
+  }
+}
+body.sidebar-resizing,
+body.sidebar-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
