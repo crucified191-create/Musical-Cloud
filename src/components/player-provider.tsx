@@ -69,12 +69,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (!user || !currentTrack) return;
     if (!isPlaying) {
       reportedTrackRef.current = null;
-      void fetchListeningPreference(user.id).then((sharing) => sharing && setListeningActivity(user.id, null, true)).catch(() => undefined);
+      void fetchListeningPreference(user.id).then((sharing) => {
+        if (sharing) return setListeningActivity(user.id, null, true);
+      }).catch(() => undefined);
       return;
     }
     if (reportedTrackRef.current === currentTrack.id) return;
     reportedTrackRef.current = currentTrack.id;
-    void fetchListeningPreference(user.id).then((sharing) => sharing && setListeningActivity(user.id, currentTrack.id, true)).catch(() => undefined);
+    void fetchListeningPreference(user.id).then((sharing) => {
+      if (sharing) return setListeningActivity(user.id, currentTrack.id, true);
+    }).catch(() => undefined);
   }, [currentTrack, isPlaying, user]);
 
   const playAt = useCallback((tracks: Track[], targetIndex: number, resetHistory = false) => {
