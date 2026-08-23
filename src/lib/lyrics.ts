@@ -18,7 +18,7 @@ export function parseLyrics(content: string): LyricLine[] {
 }
 
 function lyricKey(title: string, artist: string, album: string, duration: number) {
-  return [title, artist, album, Math.round(duration)].map((value) => value.trim?.().toLowerCase?.() ?? value).join("|");
+  return [title, artist, album, String(Math.round(duration))].map((value) => value.trim().toLowerCase()).join("|");
 }
 
 export function lookupLyrics(title: string, artist: string, album: string, duration: number): Promise<LyricsLookup | null> {
