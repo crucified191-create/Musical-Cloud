@@ -47,6 +47,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const historyRef = useRef<number[]>([]);
   const filtersRef = useRef<Partial<Record<keyof EqualizerSettings, BiquadFilterNode>>>({});
+  const audioContextRef = useRef<AudioContext | null>(null);
   const [queue, setQueue] = useState<Track[]>([]);
   const [index, setIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -69,6 +70,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     let context: AudioContext | undefined;
     try {
       context = new AudioContext();
+      audioContextRef.current = context;
       const source = context.createMediaElementSource(audio);
       const low = context.createBiquadFilter();
       low.type = "lowshelf";
@@ -91,6 +93,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
       audio.pause();
+      audioContextRef.current = null;
       void context?.close();
     };
   }, []);
@@ -106,6 +109,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setQueue(tracks);
     setIndex(targetIndex);
     setProgress(0);
+    void audioContextRef.current?.resume();
     audio.src = target.audioUrl;
     void audio.play().catch(() => setIsPlaying(false));
   }, []);
