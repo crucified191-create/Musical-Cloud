@@ -105,7 +105,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const target = tracks[targetIndex];
     if (!audio || !target) return;
     if (resetHistory) historyRef.current = [targetIndex];
-    else if (historyRef.current.at(-1) !== targetIndex) historyRef.current.push(targetIndex);
+    else if (historyRef.current[historyRef.current.length - 1] !== targetIndex) historyRef.current.push(targetIndex);
     setQueue(tracks);
     setIndex(targetIndex);
     setProgress(0);
@@ -163,7 +163,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const history = historyRef.current;
     if (history.length > 1) {
       history.pop();
-      const previousIndex = history.at(-1);
+      const previousIndex = history[history.length - 1];
       if (previousIndex !== undefined) {
         playAt(queue, previousIndex);
       }
