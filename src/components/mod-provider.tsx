@@ -46,13 +46,17 @@ export function ModProvider({ children }: { children: React.ReactNode }) {
     }
     let cancelled = false;
     setLoading(true);
-    getSupabaseClient().from("user_mods").select("mod_id").eq("user_id", user.id)
-      .then(({ data, error }) => {
+    void (async () => {
+      try {
+        const { data, error } = await getSupabaseClient().from("user_mods").select("mod_id").eq("user_id", user.id);
         if (error) throw error;
         if (!cancelled) setInstalled((data ?? []).map((row) => row.mod_id));
-      })
-      .catch(() => !cancelled && setInstalled([]))
-      .finally(() => !cancelled && setLoading(false));
+      } catch {
+        if (!cancelled) setInstalled([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
     return () => { cancelled = true; };
   }, [user]);
 
