@@ -5,15 +5,20 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { PlayerBar } from "@/components/player-bar";
 import { MusicIcon } from "@/components/icons";
+import { usePlayer } from "@/components/player-provider";
+import { useSettings } from "@/components/settings-provider";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 const NAV = [
   { href: "/", label: "Your library" },
   { href: "/browse", label: "Browse" },
+  { href: "/settings", label: "Settings" },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, displayName, loading, signOut } = useAuth();
+  const { currentTrack } = usePlayer();
+  const { showAlbumBackdrop } = useSettings();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -24,17 +29,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <p className="text-sm text-neutral-400">
           Set <code className="text-emerald-400">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
           <code className="text-emerald-400">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in{" "}
-          <code>.env.local</code> (see <code>.env.example</code>), run{" "}
-          <code>supabase/schema.sql</code> in the Supabase SQL editor, then restart the dev
-          server.
+          <code>.env.local</code> (see <code>.env.example</code>), run <code>supabase/schema.sql</code>{" "}
+          in the Supabase SQL editor, then restart the dev server.
         </p>
       </main>
     );
   }
 
   return (
-    <div className="flex min-h-full flex-1 flex-col text-neutral-100">
-      <header className="sticky top-0 z-20 flex items-center gap-6 border-b border-neutral-900 bg-black/80 px-6 py-3 backdrop-blur">
+    <div className="relative flex min-h-full flex-1 flex-col overflow-hidden text-neutral-100">
+      {showAlbumBackdrop && currentTrack?.coverUrl ? (
+        <>
+          <div
+            className="pointer-events-none absolute inset-0 scale-110 bg-cover bg-center opacity-35 blur-3xl transition-opacity duration-700"
+            style={{ backgroundImage: `url("${currentTrack.coverUrl}")` }}
+          />
+          <div className="pointer-events-none absolute inset-0 bg-background/70 backdrop-blur-[2px]" />
+        </>
+      ) : null}
+      <header className="relative sticky top-0 z-20 flex items-center gap-6 border-b border-neutral-900 bg-black/80 px-6 py-3 backdrop-blur transition-colors duration-300">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <MusicIcon className="h-5 w-5 text-emerald-400" />
           Riff
@@ -79,7 +92,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         </div>
       </header>
-      <main className="flex flex-1 flex-col pb-32">{children}</main>
+      <main className="relative z-10 flex flex-1 flex-col pb-32">{children}</main>
       <PlayerBar />
     </div>
   );
