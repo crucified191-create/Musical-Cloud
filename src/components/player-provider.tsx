@@ -59,6 +59,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const audio = new Audio();
+    // Supabase storage is a different origin; this must be set before assigning src
+    // when the audio is routed through the equalizer's Web Audio graph.
+    audio.crossOrigin = "anonymous";
     audioRef.current = audio;
     const onTimeUpdate = () => setProgress(audio.currentTime);
     const onPlay = () => setIsPlaying(true);
