@@ -15,6 +15,7 @@ export const MODS: Mod[] = [
   { id: "midnight-violet", name: "Midnight Violet", description: "A violet-tinted dark theme for the entire player.", kind: "theme" },
   { id: "sunset-amber", name: "Sunset Amber", description: "A warm amber theme for controls and highlights.", kind: "theme" },
   { id: "compact-library", name: "Compact Library", description: "Tightens spacing so more tracks fit on screen.", kind: "comfort" },
+  { id: "lyrics-lrc", name: "Lyrics", description: "View your own LRC lyrics or look up a timed version from LRCLIB.", kind: "comfort" },
 ];
 
 type ModState = {
