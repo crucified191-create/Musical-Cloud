@@ -189,3 +189,10 @@ create policy "users upload to own media folder" on storage.objects for insert t
 drop policy if exists "users delete own media" on storage.objects;
 create policy "users delete own media" on storage.objects for delete to authenticated
   using (bucket_id = 'media' and (select auth.uid())::text = (storage.foldername(name))[1]);
+
+
+-- New public-schema tables need explicit Data API access on projects with automatic
+-- API exposure disabled. RLS policies above remain the authorization boundary.
+grant select, insert, update, delete on public.friendships to authenticated;
+grant select, insert, update, delete on public.listening_activity to authenticated;
+grant select, insert, update, delete on public.user_mods to authenticated;
