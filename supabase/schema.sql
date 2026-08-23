@@ -196,3 +196,23 @@ create policy "users delete own media" on storage.objects for delete to authenti
 grant select, insert, update, delete on public.friendships to authenticated;
 grant select, insert, update, delete on public.listening_activity to authenticated;
 grant select, insert, update, delete on public.user_mods to authenticated;
+
+
+-- Optional user-authored lyrics (plain text or timestamped LRC) for uploaded tracks.
+create table if not exists public.track_lyrics (
+  track_id uuid primary key references public.tracks (id) on delete cascade,
+  owner_id uuid not null references public.profiles (id) on delete cascade,
+  content text not null check (char_length(content) <= 50000),
+  updated_at timestamptz not null default now()
+);
+alter table public.track_lyrics enable row level security;
+drop policy if exists "lyrics are viewable by everyone" on public.track_lyrics;
+create policy "lyrics are viewable by everyone" on public.track_lyrics for select using (true);
+drop policy if exists "owners manage track lyrics" on public.track_lyrics;
+create policy "owners manage track lyrics" on public.track_lyrics for all to authenticated
+  using ((select auth.uid()) = owner_id)
+  with check (
+    (select auth.uid()) = owner_id
+    and exists (select 1 from public.tracks t where t.id = track_id and t.owner_id = (select auth.uid()))
+  );
+grant select, insert, update, delete on public.track_lyrics to authenticated;
