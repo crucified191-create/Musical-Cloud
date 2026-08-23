@@ -69,7 +69,7 @@ export type Database = {
       playlists: TableConfig<PlaylistRow, Omit<PlaylistRow, "id" | "created_at" | "is_public"> & { id?: string; is_public?: boolean }, Partial<Pick<PlaylistRow, "name" | "is_public">>>;
       playlist_tracks: TableConfig<PlaylistTrackRow, Omit<PlaylistTrackRow, "added_at" | "position"> & { position?: number }, Partial<Pick<PlaylistTrackRow, "position">>>;
       friendships: TableConfig<FriendshipRow, Omit<FriendshipRow, "id" | "created_at" | "status"> & { status?: FriendshipRow["status"] }, Partial<Pick<FriendshipRow, "status">>>;
-      listening_activity: TableConfig<ListeningActivityRow, Omit<ListeningActivityRow, "updated_at">, Partial<Pick<ListeningActivityRow, "track_id" | "is_sharing" | "updated_at">>>;
+      listening_activity: TableConfig<ListeningActivityRow, Omit<ListeningActivityRow, "updated_at"> & { updated_at?: string }, Partial<Pick<ListeningActivityRow, "track_id" | "is_sharing" | "updated_at">>>;
       user_mods: TableConfig<UserModRow, Omit<UserModRow, "installed_at">, Partial<Pick<UserModRow, "settings">>>;
     };
     Views: Record<never, never>;
