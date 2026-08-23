@@ -13,6 +13,7 @@ import {
   VolumeIcon,
 } from "@/components/icons";
 import { formatTime } from "@/lib/format";
+import { LyricsPanel } from "@/components/lyrics-panel";
 
 export function PlayerBar() {
   const {
@@ -133,5 +134,6 @@ export function PlayerBar() {
         </div>
       </div>
     </footer>
+      <LyricsPanel />
   );
 }
