@@ -36,16 +36,7 @@ export function PreviousIcon({ className }: IconProps) {
 
 export function ShuffleIcon({ className }: IconProps) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
       <path d="M16 4h4v4M20 4l-6.5 6.5M16 20h4v-4M20 20l-6.5-6.5M4 4l4.5 4.5M4 20l16-16" />
     </svg>
   );
@@ -53,94 +44,34 @@ export function ShuffleIcon({ className }: IconProps) {
 
 export function RepeatIcon({ className, one }: IconProps & { one?: boolean }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M17 3l3 3-3 3" />
-      <path d="M20 6H7a3 3 0 0 0-3 3v2" />
-      <path d="M7 21l-3-3 3-3" />
-      <path d="M4 18h13a3 3 0 0 0 3-3v-2" />
-      {one ? <path d="M12 10v4M12 10l-1.2.9" /> : null}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M17 3l3 3-3 3" /><path d="M20 6H7a3 3 0 0 0-3 3v2" /><path d="M7 21l-3-3 3-3" /><path d="M4 18h13a3 3 0 0 0 3-3v-2" />{one ? <path d="M12 10v4M12 10l-1.2.9" /> : null}
     </svg>
   );
 }
 
 export function TrashIcon({ className }: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
-    </svg>
-  );
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>;
 }
 
 export function MusicIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M20 3.5v11.2a3.3 3.3 0 1 1-2-3V8.2l-8 1.6v7.4a3.3 3.3 0 1 1-2-3V6.8l12-2.4Z" />
-    </svg>
-  );
+  return <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true"><path d="M20 3.5v11.2a3.3 3.3 0 1 1-2-3V8.2l-8 1.6v7.4a3.3 3.3 0 1 1-2-3V6.8l12-2.4Z" /></svg>;
 }
 
 export function VolumeIcon({ className, muted }: IconProps & { muted?: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" fill="currentColor" stroke="none" />
-      {muted ? (
-        <path d="M16 9.5l4 5M20 9.5l-4 5" />
-      ) : (
-        <>
-          <path d="M15.5 9.5a3.5 3.5 0 0 1 0 5" />
-          <path d="M18 7a7 7 0 0 1 0 10" />
-        </>
-      )}
-    </svg>
-  );
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" fill="currentColor" stroke="none" />{muted ? <path d="M16 9.5l4 5M20 9.5l-4 5" /> : <><path d="M15.5 9.5a3.5 3.5 0 0 1 0 5" /><path d="M18 7a7 7 0 0 1 0 10" /></>}</svg>;
 }
 
 export function GoogleIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <path
-        fill="#4285f4"
-        d="M23.5 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.45a5.52 5.52 0 0 1-2.39 3.62v3h3.86c2.26-2.08 3.58-5.15 3.58-8.81z"
-      />
-      <path
-        fill="#34a853"
-        d="M12 24c3.24 0 5.96-1.08 7.95-2.92l-3.87-3a7.2 7.2 0 0 1-10.72-3.77H1.36v3.09A12 12 0 0 0 12 24z"
-      />
-      <path
-        fill="#fbbc05"
-        d="M5.36 14.31a7.2 7.2 0 0 1 0-4.6V6.62H1.36a12 12 0 0 0 0 10.78z"
-      />
-      <path
-        fill="#ea4335"
-        d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.43-3.43C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.36 6.62l4 3.09A7.2 7.2 0 0 1 12 4.77z"
-      />
-    </svg>
-  );
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true"><path fill="#4285f4" d="M23.5 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.45a5.52 5.52 0 0 1-2.39 3.62v3h3.86c2.26-2.08 3.58-5.15 3.58-8.81z" /><path fill="#34a853" d="M12 24c3.24 0 5.96-1.08 7.95-2.92l-3.87-3a7.2 7.2 0 0 1-10.72-3.77H1.36v3.09A12 12 0 0 0 12 24z" /><path fill="#fbbc05" d="M5.36 14.31a7.2 7.2 0 0 1 0-4.6V6.62H1.36a12 12 0 0 0 0 10.78z" /><path fill="#ea4335" d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.43-3.43C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.36 6.62l4 3.09A7.2 7.2 0 0 1 12 4.77z" /></svg>;
+}
+
+export function QueueIcon({ className }: IconProps) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className={className} aria-hidden="true"><path d="M4 6h11M4 12h11M4 18h8M18 16v4M16 18h4" /></svg>;
+}
+export function FullscreenIcon({ className }: IconProps) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5" /></svg>;
+}
+export function LyricsIcon({ className }: IconProps) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true"><path d="M5 5.5h14v13H9l-4 3v-16Z" /><path d="M8.5 10h7M8.5 14h4.5" /></svg>;
 }

@@ -11,12 +11,17 @@ import {
   RepeatIcon,
   ShuffleIcon,
   VolumeIcon,
+  QueueIcon,
+  FullscreenIcon,
+  LyricsIcon,
 } from "@/components/icons";
 import { formatTime } from "@/lib/format";
 import { LyricsPanel } from "@/components/lyrics-panel";
 import { PlayerExtras } from "@/components/player-extras";
+import { useMods } from "@/components/mod-provider";
 
 export function PlayerBar() {
+  const { isInstalled } = useMods();
   const {
     currentTrack,
     isPlaying,
@@ -91,6 +96,7 @@ export function PlayerBar() {
             >
               <NextIcon className="h-5 w-5" />
             </button>
+            {isInstalled("lyrics-lrc") ? <button type="button" disabled={!currentTrack} onClick={() => window.dispatchEvent(new Event("riff:open-lyrics"))} aria-label="Open lyrics" className="rounded p-2 text-neutral-400 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-35"><LyricsIcon className="h-4 w-4" /></button> : null}
             <button
               type="button"
               onClick={cycleRepeat}
@@ -123,6 +129,8 @@ export function PlayerBar() {
 
         <div className="hidden flex-1 items-center justify-end gap-2 sm:flex">
           <VolumeIcon className="h-4 w-4 text-neutral-400" muted={volume === 0} />
+          {isInstalled("queue-view") ? <button type="button" onClick={() => window.dispatchEvent(new Event("riff:open-queue"))} aria-label="Open queue" className="rounded p-2 text-neutral-400 transition hover:text-white"><QueueIcon className="h-5 w-5" /></button> : null}
+          {isInstalled("fullscreen-player") ? <button type="button" onClick={() => window.dispatchEvent(new Event("riff:open-fullscreen"))} aria-label="Open fullscreen player" className="rounded p-2 text-neutral-400 transition hover:text-white"><FullscreenIcon className="h-5 w-5" /></button> : null}
           <input
             type="range"
             min={0}

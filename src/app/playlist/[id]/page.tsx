@@ -6,7 +6,9 @@ import { usePlayer } from "@/components/player-provider";
 import { TrackList } from "@/components/track-list";
 import { PlayIcon } from "@/components/icons";
 import {
+  addTracksToPlaylist,
   fetchPlaylist,
+  fetchPlaylists,
   removeTrackFromPlaylist,
   setPlaylistVisibility,
   type Playlist,
@@ -19,6 +21,7 @@ export default function PlaylistPage({ params }: PageProps<"/playlist/[id]">) {
   const { playQueue } = usePlayer();
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [ownPlaylists, setOwnPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +44,22 @@ export default function PlaylistPage({ params }: PageProps<"/playlist/[id]">) {
     };
   }, [id]);
 
+  useEffect(() => {
+    if (!user) {
+      setOwnPlaylists([]);
+      return;
+    }
+    let cancelled = false;
+    fetchPlaylists(user.id)
+      .then((items) => !cancelled && setOwnPlaylists(items))
+      .catch(() => !cancelled && setOwnPlaylists([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
   const isOwner = Boolean(user && playlist && user.id === playlist.ownerId);
+  const destinationPlaylists = ownPlaylists.filter((item) => item.id !== playlist?.id);
 
   if (loading) return <p className="px-6 py-10 text-sm text-neutral-400">Loading…</p>;
   if (error || !playlist)
@@ -92,7 +110,11 @@ export default function PlaylistPage({ params }: PageProps<"/playlist/[id]">) {
         <TrackList
           tracks={tracks}
           showOwner
-          removeLabel="Remove"
+          playlists={destinationPlaylists}
+          onAddToPlaylist={async (playlistId, selectedTracks) => {
+            await addTracksToPlaylist(playlistId, selectedTracks.map((track) => track.id));
+          }}
+          removeLabel="Remove from this playlist"
           onRemove={
             isOwner
               ? async (track) => {

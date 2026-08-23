@@ -17,28 +17,13 @@ export function parseLyrics(content: string): LyricLine[] {
 }
 
 export async function lookupLyrics(title: string, artist: string, album: string, duration: number): Promise<LyricsLookup | null> {
-  const lrclibUrl = new URL("https://lrclib.net/api/get");
-  lrclibUrl.searchParams.set("track_name", title);
-  lrclibUrl.searchParams.set("artist_name", artist);
-  if (album) lrclibUrl.searchParams.set("album_name", album);
-  if (duration > 0) lrclibUrl.searchParams.set("duration", String(Math.round(duration)));
-  try {
-    const response = await fetch(lrclibUrl, { headers: { Accept: "application/json" } });
-    if (response.ok) {
-      const body = await response.json() as { syncedLyrics?: string | null; plainLyrics?: string | null };
-      const content = body.syncedLyrics || body.plainLyrics;
-      if (content) return { content, source: "LRCLIB", synced: Boolean(body.syncedLyrics) };
-    }
-  } catch { /* Try the plain-text fallback below. */ }
-
-  try {
-    const response = await fetch(`https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`);
-    if (response.ok) {
-      const body = await response.json() as { lyrics?: string };
-      if (body.lyrics) return { content: body.lyrics, source: "Lyrics.ovh", synced: false };
-    }
-  } catch { /* No free provider returned lyrics. */ }
-  return null;
+  const query = new URLSearchParams({ title, artist });
+  if (album) query.set("album", album);
+  if (duration > 0) query.set("duration", String(Math.round(duration)));
+  const response = await fetch(`/api/lyrics?${query.toString()}`);
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error("Lyrics lookup is unavailable right now.");
+  return response.json() as Promise<LyricsLookup>;
 }
 
 export async function fetchLyrics(trackId: string): Promise<string> {
