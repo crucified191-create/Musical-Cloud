@@ -276,3 +276,30 @@ export async function removeTrackFromPlaylist(
     .eq("track_id", trackId);
   if (error) throw error;
 }
+
+
+export async function addTracksToPlaylist(playlistId: string, trackIds: string[]): Promise<number> {
+  const uniqueTrackIds = [...new Set(trackIds)];
+  if (uniqueTrackIds.length === 0) return 0;
+  const supabase = getSupabaseClient();
+  const [{ count }, { data: existing, error: existingError }] = await Promise.all([
+    supabase
+      .from("playlist_tracks")
+      .select("track_id", { count: "exact", head: true })
+      .eq("playlist_id", playlistId),
+    supabase.from("playlist_tracks").select("track_id").eq("playlist_id", playlistId),
+  ]);
+  if (existingError) throw existingError;
+  const existingIds = new Set((existing ?? []).map((entry) => entry.track_id));
+  const additions = uniqueTrackIds.filter((id) => !existingIds.has(id));
+  if (additions.length === 0) return 0;
+  const { error } = await supabase.from("playlist_tracks").insert(
+    additions.map((trackId, offset) => ({
+      playlist_id: playlistId,
+      track_id: trackId,
+      position: (count ?? 0) + offset,
+    })),
+  );
+  if (error) throw error;
+  return additions.length;
+}
