@@ -1,6 +1,7 @@
 export type ProfileRow = {
   id: string;
   display_name: string;
+  avatar_path: string | null;
   created_at: string;
 };
 
@@ -71,7 +72,7 @@ type TableConfig<Row, Insert, Update> = {
 export type Database = {
   public: {
     Tables: {
-      profiles: TableConfig<ProfileRow, { id: string; display_name: string }, Partial<Pick<ProfileRow, "display_name">>>;
+      profiles: TableConfig<ProfileRow, { id: string; display_name: string; avatar_path?: string | null }, Partial<Pick<ProfileRow, "display_name" | "avatar_path">>>;
       tracks: TableConfig<TrackRow, Omit<TrackRow, "id" | "created_at"> & { id?: string }, Partial<Omit<TrackRow, "id" | "owner_id" | "created_at">>>;
       playlists: TableConfig<PlaylistRow, Omit<PlaylistRow, "id" | "created_at" | "is_public"> & { id?: string; is_public?: boolean }, Partial<Pick<PlaylistRow, "name" | "is_public">>>;
       playlist_tracks: TableConfig<PlaylistTrackRow, Omit<PlaylistTrackRow, "added_at" | "position"> & { position?: number }, Partial<Pick<PlaylistTrackRow, "position">>>;
