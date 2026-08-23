@@ -12,6 +12,7 @@ import {
 import type { Track } from "@/lib/library";
 
 export type RepeatMode = "off" | "all" | "one";
+export type EqualizerSettings = { low: number; mid: number; high: number };
 
 type PlayerState = {
   queue: Track[];
@@ -21,6 +22,7 @@ type PlayerState = {
   volume: number;
   shuffle: boolean;
   repeat: RepeatMode;
+  equalizer: EqualizerSettings;
   playQueue: (tracks: Track[], startIndex: number) => void;
   toggleTrack: (tracks: Track[], index: number) => void;
   togglePlay: () => void;
@@ -28,6 +30,7 @@ type PlayerState = {
   playPrevious: () => void;
   seek: (seconds: number) => void;
   setVolume: (value: number) => void;
+  setEqualizer: (band: keyof EqualizerSettings, value: number) => void;
   toggleShuffle: () => void;
   cycleRepeat: () => void;
 };
@@ -42,6 +45,8 @@ export function usePlayer(): PlayerState {
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const historyRef = useRef<number[]>([]);
+  const filtersRef = useRef<Partial<Record<keyof EqualizerSettings, BiquadFilterNode>>>({});
   const [queue, setQueue] = useState<Track[]>([]);
   const [index, setIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -49,6 +54,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [volume, setVolumeState] = useState(1);
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState<RepeatMode>("off");
+  const [equalizer, setEqualizerState] = useState<EqualizerSettings>({ low: 0, mid: 0, high: 0 });
 
   useEffect(() => {
     const audio = new Audio();
@@ -59,77 +65,109 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
+
+    let context: AudioContext | undefined;
+    try {
+      context = new AudioContext();
+      const source = context.createMediaElementSource(audio);
+      const low = context.createBiquadFilter();
+      low.type = "lowshelf";
+      low.frequency.value = 320;
+      const mid = context.createBiquadFilter();
+      mid.type = "peaking";
+      mid.frequency.value = 1000;
+      mid.Q.value = 0.8;
+      const high = context.createBiquadFilter();
+      high.type = "highshelf";
+      high.frequency.value = 3200;
+      source.connect(low).connect(mid).connect(high).connect(context.destination);
+      filtersRef.current = { low, mid, high };
+    } catch {
+      // Audio still works if a browser does not support the Web Audio API.
+    }
+
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
       audio.pause();
+      void context?.close();
     };
   }, []);
 
   const currentTrack = index >= 0 && index < queue.length ? queue[index] : null;
 
-  const start = useCallback((tracks: Track[], startIndex: number) => {
+  const playAt = useCallback((tracks: Track[], targetIndex: number, resetHistory = false) => {
     const audio = audioRef.current;
-    if (!audio || tracks.length === 0) return;
-    const target = tracks[startIndex];
-    if (!target) return;
+    const target = tracks[targetIndex];
+    if (!audio || !target) return;
+    if (resetHistory) historyRef.current = [targetIndex];
+    else if (historyRef.current.at(-1) !== targetIndex) historyRef.current.push(targetIndex);
     setQueue(tracks);
-    setIndex(startIndex);
+    setIndex(targetIndex);
     setProgress(0);
     audio.src = target.audioUrl;
     void audio.play().catch(() => setIsPlaying(false));
   }, []);
 
+  const playQueue = useCallback(
+    (tracks: Track[], startIndex: number) => {
+      if (tracks.length > 0) playAt(tracks, startIndex, true);
+    },
+    [playAt],
+  );
+
   const toggleTrack = useCallback(
     (tracks: Track[], targetIndex: number) => {
       const audio = audioRef.current;
-      if (!audio) return;
       const target = tracks[targetIndex];
-      if (!target) return;
+      if (!audio || !target) return;
       if (currentTrack?.id === target.id) {
         if (audio.paused) void audio.play().catch(() => setIsPlaying(false));
         else audio.pause();
         return;
       }
-      start(tracks, targetIndex);
+      playQueue(tracks, targetIndex);
     },
-    [currentTrack, start],
+    [currentTrack, playQueue],
   );
 
-  const step = useCallback(
-    (offset: number) => {
-      if (queue.length === 0) return;
-      if (shuffle && queue.length > 1) {
-        let next = Math.floor(Math.random() * queue.length);
-        if (next === index) next = (next + 1) % queue.length;
-        start(queue, next);
-        return;
+  const playNext = useCallback(() => {
+    if (queue.length === 0) return;
+    let nextIndex: number;
+    if (shuffle && queue.length > 1) {
+      do {
+        nextIndex = Math.floor(Math.random() * queue.length);
+      } while (nextIndex === index);
+    } else {
+      nextIndex = index + 1;
+      if (nextIndex >= queue.length) {
+        if (repeat !== "all") return;
+        nextIndex = 0;
       }
-      const next = index + offset;
-      if (next < 0) {
-        start(queue, queue.length - 1);
-        return;
-      }
-      if (next >= queue.length) {
-        if (repeat === "all") start(queue, 0);
-        return;
-      }
-      start(queue, next);
-    },
-    [index, queue, repeat, shuffle, start],
-  );
-
-  const playNext = useCallback(() => step(1), [step]);
+    }
+    playAt(queue, nextIndex);
+  }, [index, playAt, queue, repeat, shuffle]);
 
   const playPrevious = useCallback(() => {
     const audio = audioRef.current;
     if (audio && audio.currentTime > 3) {
       audio.currentTime = 0;
+      setProgress(0);
       return;
     }
-    step(-1);
-  }, [step]);
+    const history = historyRef.current;
+    if (history.length > 1) {
+      history.pop();
+      const previousIndex = history.at(-1);
+      if (previousIndex !== undefined) {
+        playAt(queue, previousIndex);
+        history.pop();
+      }
+      return;
+    }
+    if (queue.length > 0 && index > 0) playAt(queue, index - 1, true);
+  }, [index, playAt, queue]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -150,12 +188,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const audio = audioRef.current;
     if (!audio) return;
     if (!currentTrack) {
-      if (queue.length > 0) start(queue, 0);
+      if (queue.length > 0) playQueue(queue, 0);
       return;
     }
     if (audio.paused) void audio.play().catch(() => setIsPlaying(false));
     else audio.pause();
-  }, [currentTrack, queue, start]);
+  }, [currentTrack, playQueue, queue]);
 
   const seek = useCallback((seconds: number) => {
     const audio = audioRef.current;
@@ -169,8 +207,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (audioRef.current) audioRef.current.volume = value;
   }, []);
 
-  const toggleShuffle = useCallback(() => setShuffle((value) => !value), []);
+  const setEqualizer = useCallback((band: keyof EqualizerSettings, value: number) => {
+    setEqualizerState((previous) => ({ ...previous, [band]: value }));
+    const filter = filtersRef.current[band];
+    if (filter) filter.gain.value = value;
+  }, []);
 
+  const toggleShuffle = useCallback(() => setShuffle((value) => !value), []);
   const cycleRepeat = useCallback(
     () => setRepeat((mode) => (mode === "off" ? "all" : mode === "all" ? "one" : "off")),
     [],
@@ -178,41 +221,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<PlayerState>(
     () => ({
-      queue,
-      currentTrack,
-      isPlaying,
-      progress,
-      volume,
-      shuffle,
-      repeat,
-      playQueue: start,
-      toggleTrack,
-      togglePlay,
-      playNext,
-      playPrevious,
-      seek,
-      setVolume,
-      toggleShuffle,
-      cycleRepeat,
+      queue, currentTrack, isPlaying, progress, volume, shuffle, repeat, equalizer,
+      playQueue, toggleTrack, togglePlay, playNext, playPrevious, seek, setVolume,
+      setEqualizer, toggleShuffle, cycleRepeat,
     }),
-    [
-      queue,
-      currentTrack,
-      isPlaying,
-      progress,
-      volume,
-      shuffle,
-      repeat,
-      start,
-      toggleTrack,
-      togglePlay,
-      playNext,
-      playPrevious,
-      seek,
-      setVolume,
-      toggleShuffle,
-      cycleRepeat,
-    ],
+    [queue, currentTrack, isPlaying, progress, volume, shuffle, repeat, equalizer, playQueue, toggleTrack, togglePlay, playNext, playPrevious, seek, setVolume, setEqualizer, toggleShuffle, cycleRepeat],
   );
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
