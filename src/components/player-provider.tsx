@@ -162,7 +162,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       const previousIndex = history.at(-1);
       if (previousIndex !== undefined) {
         playAt(queue, previousIndex);
-        history.pop();
       }
       return;
     }
