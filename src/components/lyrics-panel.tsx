@@ -16,6 +16,7 @@ export function LyricsPanel() {
   const [editing, setEditing] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lyricsInstalled = isInstalled("lyrics-lrc");
 
   useEffect(() => {
     const openLyrics = () => {
@@ -27,16 +28,32 @@ export function LyricsPanel() {
 
   useEffect(() => {
     setEditing(false); setError(null); setSource(null);
-    if (!currentTrack) { setContent(""); setOpen(false); return; }
-    void fetchLyrics(currentTrack.id).then((saved) => {
-      setContent(saved);
-      if (saved) setSource("Added by the track owner");
-    }).catch((caught: Error) => setError(caught.message));
-  }, [currentTrack?.id]);
+    if (!currentTrack || !lyricsInstalled) { setContent(""); setOpen(false); return; }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const saved = await fetchLyrics(currentTrack.id);
+        if (cancelled) return;
+        if (saved) {
+          setContent(saved);
+          setSource("Added by the track owner");
+          return;
+        }
+        const found = await lookupLyrics(currentTrack.title, currentTrack.artist, currentTrack.album, currentTrack.duration);
+        if (!cancelled && found) {
+          setContent(found.content);
+          setSource(`${found.source}${found.synced ? " · synced" : ""} · automatic`);
+        }
+      } catch {
+        // Automatic lookup is best-effort; the manual button remains available.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [currentTrack?.id, lyricsInstalled]);
 
   const lines = useMemo(() => parseLyrics(content), [content]);
   const active = lines.reduce((last, line, index) => line.time !== null && line.time <= progress ? index : last, -1);
-  if (!isInstalled("lyrics-lrc") || !currentTrack) return null;
+  if (!lyricsInstalled || !currentTrack) return null;
 
   const findLyrics = async () => {
     setLookingUp(true); setError(null);
