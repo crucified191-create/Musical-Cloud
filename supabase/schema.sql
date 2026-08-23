@@ -216,3 +216,15 @@ create policy "owners manage track lyrics" on public.track_lyrics for all to aut
     and exists (select 1 from public.tracks t where t.id = track_id and t.owner_id = (select auth.uid()))
   );
 grant select, insert, update, delete on public.track_lyrics to authenticated;
+
+
+-- Profile photos are public to support playlists, search, and friends, while writes
+-- remain restricted to the owner's media folder.
+alter table public.profiles add column if not exists avatar_path text;
+drop policy if exists "users update own profile" on public.profiles;
+create policy "users update own profile" on public.profiles for update to authenticated
+  using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
+drop policy if exists "users update own media" on storage.objects;
+create policy "users update own media" on storage.objects for update to authenticated
+  using (bucket_id = 'media' and (select auth.uid())::text = (storage.foldername(name))[1])
+  with check (bucket_id = 'media' and (select auth.uid())::text = (storage.foldername(name))[1]);
