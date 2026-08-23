@@ -272,7 +272,7 @@ export default function LibraryPage() {
               } catch (caught) {
                 setError(caught instanceof Error ? caught.message : "Could not add tracks to playlist");
               }
-            }
+            }}
           />
         )}
       </section>
