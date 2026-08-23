@@ -6,7 +6,7 @@ import { useAuth } from "@/components/auth-provider";
 import { TrackList } from "@/components/track-list";
 import { MusicIcon } from "@/components/icons";
 import {
-  addTrackToPlaylist,
+  addTracksToPlaylist,
   createPlaylist,
   deleteTrack,
   fetchPlaylists,
@@ -257,34 +257,21 @@ export default function LibraryPage() {
               await deleteTrack(track);
               setTracks((previous) => previous.filter((item) => item.id !== track.id));
             }}
-            renderActions={(track) =>
-              playlists.length === 0 ? null : (
-                <select
-                  aria-label={`Add ${track.title} to a playlist`}
-                  defaultValue=""
-                  onChange={async (event) => {
-                    const playlistId = event.target.value;
-                    event.target.value = "";
-                    if (!playlistId) return;
-                    await addTrackToPlaylist(playlistId, track.id);
-                    setPlaylists((previous) =>
-                      previous.map((item) =>
-                        item.id === playlistId
-                          ? { ...item, trackCount: item.trackCount + 1 }
-                          : item,
-                      ),
-                    );
-                  }}
-                  className="rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1 text-xs text-neutral-300 outline-none focus:border-emerald-500"
-                >
-                  <option value="">Add to…</option>
-                  {playlists.map((playlist) => (
-                    <option key={playlist.id} value={playlist.id}>
-                      {playlist.name}
-                    </option>
-                  ))}
-                </select>
-              )
+            playlists={playlists}
+            onAddToPlaylist={async (playlistId, selectedTracks) => {
+              try {
+                const added = await addTracksToPlaylist(
+                  playlistId,
+                  selectedTracks.map((track) => track.id),
+                );
+                setPlaylists((previous) =>
+                  previous.map((item) =>
+                    item.id === playlistId ? { ...item, trackCount: item.trackCount + added } : item,
+                  ),
+                );
+              } catch (caught) {
+                setError(caught instanceof Error ? caught.message : "Could not add tracks to playlist");
+              }
             }
           />
         )}
