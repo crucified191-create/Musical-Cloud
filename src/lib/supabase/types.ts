@@ -1,6 +1,7 @@
 export type ProfileRow = {
   id: string;
   display_name: string;
+  avatar_path: string | null;
   created_at: string;
 };
 
@@ -47,6 +48,13 @@ export type ListeningActivityRow = {
   updated_at: string;
 };
 
+export type TrackLyricsRow = {
+  track_id: string;
+  owner_id: string;
+  content: string;
+  updated_at: string;
+};
+
 export type UserModRow = {
   user_id: string;
   mod_id: string;
@@ -64,12 +72,13 @@ type TableConfig<Row, Insert, Update> = {
 export type Database = {
   public: {
     Tables: {
-      profiles: TableConfig<ProfileRow, { id: string; display_name: string }, Partial<Pick<ProfileRow, "display_name">>>;
+      profiles: TableConfig<ProfileRow, { id: string; display_name: string; avatar_path?: string | null }, Partial<Pick<ProfileRow, "display_name" | "avatar_path">>>;
       tracks: TableConfig<TrackRow, Omit<TrackRow, "id" | "created_at"> & { id?: string }, Partial<Omit<TrackRow, "id" | "owner_id" | "created_at">>>;
       playlists: TableConfig<PlaylistRow, Omit<PlaylistRow, "id" | "created_at" | "is_public"> & { id?: string; is_public?: boolean }, Partial<Pick<PlaylistRow, "name" | "is_public">>>;
       playlist_tracks: TableConfig<PlaylistTrackRow, Omit<PlaylistTrackRow, "added_at" | "position"> & { position?: number }, Partial<Pick<PlaylistTrackRow, "position">>>;
       friendships: TableConfig<FriendshipRow, Omit<FriendshipRow, "id" | "created_at" | "status"> & { status?: FriendshipRow["status"] }, Partial<Pick<FriendshipRow, "status">>>;
       listening_activity: TableConfig<ListeningActivityRow, Omit<ListeningActivityRow, "updated_at"> & { updated_at?: string }, Partial<Pick<ListeningActivityRow, "track_id" | "is_sharing" | "updated_at">>>;
+      track_lyrics: TableConfig<TrackLyricsRow, Omit<TrackLyricsRow, "updated_at"> & { updated_at?: string }, Partial<Pick<TrackLyricsRow, "content" | "updated_at">>>;
       user_mods: TableConfig<UserModRow, Omit<UserModRow, "installed_at">, Partial<Pick<UserModRow, "settings">>>;
     };
     Views: Record<never, never>;

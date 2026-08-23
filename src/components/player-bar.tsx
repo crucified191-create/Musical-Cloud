@@ -13,6 +13,8 @@ import {
   VolumeIcon,
 } from "@/components/icons";
 import { formatTime } from "@/lib/format";
+import { LyricsPanel } from "@/components/lyrics-panel";
+import { PlayerExtras } from "@/components/player-extras";
 
 export function PlayerBar() {
   const {
@@ -35,7 +37,8 @@ export function PlayerBar() {
   const cover = currentTrack?.coverUrl;
 
   return (
-    <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-800 bg-neutral-950/95 px-4 py-3 backdrop-blur sm:px-6">
+    <>
+      <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-800 bg-neutral-950/95 px-4 py-3 backdrop-blur sm:px-6">
       <div className="mx-auto flex max-w-6xl items-center gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-neutral-800">
@@ -132,6 +135,9 @@ export function PlayerBar() {
           />
         </div>
       </div>
-    </footer>
+      </footer>
+      <LyricsPanel />
+      <PlayerExtras />
+    </>
   );
 }

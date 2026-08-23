@@ -5,6 +5,7 @@
   --foreground: #f5f5f5;
   --surface: rgba(12, 12, 12, 0.9);
   --border: #262626;
+  --accent: #22c55e;
 }
 
 :root[data-theme="light"] {
@@ -64,3 +65,29 @@ body {
 :root[data-theme="light"] .border-neutral-700 {
   border-color: var(--border) !important;
 }
+
+
+/* The two layout mods share the same underlying components, so queue, lyrics,
+   fullscreen playback, and custom colors continue to work in either skin. */
+:root[data-layout="apple"] .app-shell > header,
+:root[data-layout="spotify"] .app-shell > header { flex-direction: column; align-items: stretch; }
+:root[data-layout="apple"] .app-shell > header { background: rgba(247, 247, 249, 0.86); }
+:root[data-layout="spotify"] .app-shell > header { background: #050505; }
+:root[data-layout="apple"] .app-shell > header .ml-auto,
+:root[data-layout="spotify"] .app-shell > header .ml-auto { margin-left: 0; }
+:root[data-layout="apple"] .app-shell > header nav,
+:root[data-layout="spotify"] .app-shell > header nav { flex-direction: column; align-items: flex-start; gap: .7rem; }
+:root[data-layout="apple"] .app-shell > header nav a,
+:root[data-layout="spotify"] .app-shell > header nav a { width: 100%; border-radius: .55rem; padding: .5rem .65rem; }
+:root[data-layout="apple"] .app-shell > header nav a:hover { background: rgba(0,0,0,.08); }
+:root[data-layout="spotify"] .app-shell > header nav a:hover { background: #1f1f1f; }
+@media (min-width: 900px) {
+  :root[data-layout="apple"] .app-shell > header,
+  :root[data-layout="spotify"] .app-shell > header { position: fixed; inset: 0 auto 0 0; z-index: 25; width: 16rem; padding: 1.5rem; border-right: 1px solid var(--border); border-bottom: 0; }
+  :root[data-layout="apple"] .app-shell > main,
+  :root[data-layout="spotify"] .app-shell > main { margin-left: 16rem; }
+  :root[data-layout="apple"] .app-shell > footer,
+  :root[data-layout="spotify"] .app-shell > footer { left: 16rem; }
+}
+:root .accent-border { border-color: var(--accent); }
+:root .accent-text { color: var(--accent); }
