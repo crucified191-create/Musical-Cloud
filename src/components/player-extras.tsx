@@ -34,8 +34,23 @@ export function PlayerExtras() {
       setLyricsError(null);
       return;
     }
+    let cancelled = false;
     setLyricsError(null);
-    void fetchLyrics(currentTrack.id).then(setLyrics).catch(() => setLyricsError("Could not load saved lyrics."));
+    void (async () => {
+      try {
+        const saved = await fetchLyrics(currentTrack.id);
+        if (cancelled) return;
+        if (saved) {
+          setLyrics(saved);
+          return;
+        }
+        const found = await lookupLyrics(currentTrack.title, currentTrack.artist, currentTrack.album, currentTrack.duration);
+        if (!cancelled && found) setLyrics(found.content);
+      } catch {
+        if (!cancelled) setLyricsError("Lyrics lookup is unavailable right now.");
+      }
+    })();
+    return () => { cancelled = true; };
   }, [currentTrack?.id, fullscreen, lyricsEnabled]);
 
   const lyricLines = useMemo(() => parseLyrics(lyrics), [lyrics]);

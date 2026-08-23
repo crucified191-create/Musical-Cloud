@@ -4,6 +4,7 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 
 export type LyricLine = { time: number | null; text: string };
 export type LyricsLookup = { content: string; source: "LRCLIB" | "Lyrics.ovh"; synced: boolean };
+const lookupCache = new Map<string, Promise<LyricsLookup | null>>();
 
 export function parseLyrics(content: string): LyricLine[] {
   const lines: LyricLine[] = [];
@@ -16,14 +17,38 @@ export function parseLyrics(content: string): LyricLine[] {
   return lines;
 }
 
-export async function lookupLyrics(title: string, artist: string, album: string, duration: number): Promise<LyricsLookup | null> {
-  const query = new URLSearchParams({ title, artist });
-  if (album) query.set("album", album);
-  if (duration > 0) query.set("duration", String(Math.round(duration)));
-  const response = await fetch(`/api/lyrics?${query.toString()}`);
-  if (response.status === 404) return null;
-  if (!response.ok) throw new Error("Lyrics lookup is unavailable right now.");
-  return response.json() as Promise<LyricsLookup>;
+function lyricKey(title: string, artist: string, album: string, duration: number) {
+  return [title, artist, album, String(Math.round(duration))].map((value) => value.trim().toLowerCase()).join("|");
+}
+
+export function lookupLyrics(title: string, artist: string, album: string, duration: number): Promise<LyricsLookup | null> {
+  const key = lyricKey(title, artist, album, duration);
+  const existing = lookupCache.get(key);
+  if (existing) return existing;
+
+  const request = (async () => {
+    const storageKey = `riff:lyrics:${key}`;
+    try {
+      const cached = window.sessionStorage.getItem(storageKey);
+      if (cached !== null) return JSON.parse(cached) as LyricsLookup | null;
+    } catch { /* Storage can be unavailable in private browsing modes. */ }
+
+    const query = new URLSearchParams({ title, artist });
+    if (album) query.set("album", album);
+    if (duration > 0) query.set("duration", String(Math.round(duration)));
+    const response = await fetch(`/api/lyrics?${query.toString()}`);
+    if (response.status === 404) {
+      try { window.sessionStorage.setItem(storageKey, "null"); } catch { /* Ignore unavailable storage. */ }
+      return null;
+    }
+    if (!response.ok) throw new Error("Lyrics lookup is unavailable right now.");
+    const found = await response.json() as LyricsLookup;
+    try { window.sessionStorage.setItem(storageKey, JSON.stringify(found)); } catch { /* Ignore unavailable storage. */ }
+    return found;
+  })();
+
+  lookupCache.set(key, request);
+  return request;
 }
 
 export async function fetchLyrics(trackId: string): Promise<string> {
