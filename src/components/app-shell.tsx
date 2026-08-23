@@ -7,6 +7,7 @@ import { PlayerBar } from "@/components/player-bar";
 import { MusicIcon } from "@/components/icons";
 import { usePlayer } from "@/components/player-provider";
 import { useSettings } from "@/components/settings-provider";
+import { useMods } from "@/components/mod-provider";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 const NAV = [
@@ -22,6 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, displayName, loading, signOut } = useAuth();
   const { currentTrack } = usePlayer();
   const { showAlbumBackdrop } = useSettings();
+  const { layout } = useMods();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -40,7 +42,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="relative flex min-h-full flex-1 flex-col overflow-hidden text-neutral-100">
+    <div className="app-shell relative flex min-h-full flex-1 flex-col overflow-hidden text-neutral-100" data-layout={layout}>
       {showAlbumBackdrop && currentTrack?.coverUrl ? (
         <>
           <div className="pointer-events-none absolute inset-0 scale-110 bg-cover bg-center opacity-35 blur-3xl transition-opacity duration-700" style={{ backgroundImage: `url("${currentTrack.coverUrl}")` }} />
