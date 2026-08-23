@@ -14,8 +14,6 @@ const NAV = [
   { href: "/", label: "Your library" },
   { href: "/search", label: "Search" },
   { href: "/browse", label: "Browse" },
-  { href: "/friends", label: "Friends" },
-  { href: "/mods", label: "Mods" },
   { href: "/settings", label: "Settings" },
 ];
 
