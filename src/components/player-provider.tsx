@@ -10,7 +10,7 @@ export type EqualizerSettings = { low: number; mid: number; high: number };
 
 type PlayerState = {
   queue: Track[]; currentTrack: Track | null; isPlaying: boolean; progress: number; volume: number; shuffle: boolean; repeat: RepeatMode; equalizer: EqualizerSettings;
-  playQueue: (tracks: Track[], startIndex: number) => void; toggleTrack: (tracks: Track[], index: number) => void; togglePlay: () => void; playNext: () => void; playPrevious: () => void; seek: (seconds: number) => void; setVolume: (value: number) => void; setEqualizer: (band: keyof EqualizerSettings, value: number) => void; toggleShuffle: () => void; cycleRepeat: () => void;
+  playQueue: (tracks: Track[], startIndex: number) => void; enqueueTrack: (track: Track, next?: boolean) => void; toggleTrack: (tracks: Track[], index: number) => void; togglePlay: () => void; playNext: () => void; playPrevious: () => void; seek: (seconds: number) => void; setVolume: (value: number) => void; setEqualizer: (band: keyof EqualizerSettings, value: number) => void; toggleShuffle: () => void; cycleRepeat: () => void;
 };
 
 const PlayerContext = createContext<PlayerState | null>(null);
@@ -92,6 +92,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const playQueue = useCallback((tracks: Track[], startIndex: number) => { if (tracks.length > 0) playAt(tracks, startIndex, true); }, [playAt]);
+  const enqueueTrack = useCallback((track: Track, next = false) => {
+    setQueue((previous) => {
+      if (previous.some((item) => item.id === track.id)) return previous;
+      const insertionPoint = next && index >= 0 ? index + 1 : previous.length;
+      return [...previous.slice(0, insertionPoint), track, ...previous.slice(insertionPoint)];
+    });
+  }, [index]);
   const toggleTrack = useCallback((tracks: Track[], targetIndex: number) => {
     const audio = audioRef.current; const target = tracks[targetIndex];
     if (!audio || !target) return;
@@ -133,7 +140,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const cycleRepeat = useCallback(() => setRepeat((mode) => mode === "off" ? "all" : mode === "all" ? "one" : "off"), []);
 
   const value = useMemo<PlayerState>(() => ({
-    queue, currentTrack, isPlaying, progress, volume, shuffle, repeat, equalizer, playQueue, toggleTrack, togglePlay, playNext, playPrevious, seek, setVolume, setEqualizer, toggleShuffle, cycleRepeat,
-  }), [queue, currentTrack, isPlaying, progress, volume, shuffle, repeat, equalizer, playQueue, toggleTrack, togglePlay, playNext, playPrevious, seek, setVolume, setEqualizer, toggleShuffle, cycleRepeat]);
+    queue, currentTrack, isPlaying, progress, volume, shuffle, repeat, equalizer, playQueue, enqueueTrack, toggleTrack, togglePlay, playNext, playPrevious, seek, setVolume, setEqualizer, toggleShuffle, cycleRepeat,
+  }), [queue, currentTrack, isPlaying, progress, volume, shuffle, repeat, equalizer, playQueue, enqueueTrack, toggleTrack, togglePlay, playNext, playPrevious, seek, setVolume, setEqualizer, toggleShuffle, cycleRepeat]);
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 }
