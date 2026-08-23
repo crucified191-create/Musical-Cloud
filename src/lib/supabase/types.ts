@@ -32,6 +32,28 @@ export type PlaylistTrackRow = {
   added_at: string;
 };
 
+export type FriendshipRow = {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: "pending" | "accepted";
+  created_at: string;
+};
+
+export type ListeningActivityRow = {
+  user_id: string;
+  track_id: string | null;
+  is_sharing: boolean;
+  updated_at: string;
+};
+
+export type UserModRow = {
+  user_id: string;
+  mod_id: string;
+  settings: Record<string, unknown>;
+  installed_at: string;
+};
+
 type TableConfig<Row, Insert, Update> = {
   Row: Row;
   Insert: Insert;
@@ -42,29 +64,13 @@ type TableConfig<Row, Insert, Update> = {
 export type Database = {
   public: {
     Tables: {
-      profiles: TableConfig<
-        ProfileRow,
-        { id: string; display_name: string },
-        Partial<Pick<ProfileRow, "display_name">>
-      >;
-      tracks: TableConfig<
-        TrackRow,
-        Omit<TrackRow, "id" | "created_at"> & { id?: string },
-        Partial<Omit<TrackRow, "id" | "owner_id" | "created_at">>
-      >;
-      playlists: TableConfig<
-        PlaylistRow,
-        Omit<PlaylistRow, "id" | "created_at" | "is_public"> & {
-          id?: string;
-          is_public?: boolean;
-        },
-        Partial<Pick<PlaylistRow, "name" | "is_public">>
-      >;
-      playlist_tracks: TableConfig<
-        PlaylistTrackRow,
-        Omit<PlaylistTrackRow, "added_at" | "position"> & { position?: number },
-        Partial<Pick<PlaylistTrackRow, "position">>
-      >;
+      profiles: TableConfig<ProfileRow, { id: string; display_name: string }, Partial<Pick<ProfileRow, "display_name">>>;
+      tracks: TableConfig<TrackRow, Omit<TrackRow, "id" | "created_at"> & { id?: string }, Partial<Omit<TrackRow, "id" | "owner_id" | "created_at">>>;
+      playlists: TableConfig<PlaylistRow, Omit<PlaylistRow, "id" | "created_at" | "is_public"> & { id?: string; is_public?: boolean }, Partial<Pick<PlaylistRow, "name" | "is_public">>>;
+      playlist_tracks: TableConfig<PlaylistTrackRow, Omit<PlaylistTrackRow, "added_at" | "position"> & { position?: number }, Partial<Pick<PlaylistTrackRow, "position">>>;
+      friendships: TableConfig<FriendshipRow, Omit<FriendshipRow, "id" | "created_at" | "status"> & { status?: FriendshipRow["status"] }, Partial<Pick<FriendshipRow, "status">>>;
+      listening_activity: TableConfig<ListeningActivityRow, Omit<ListeningActivityRow, "updated_at"> & { updated_at?: string }, Partial<Pick<ListeningActivityRow, "track_id" | "is_sharing" | "updated_at">>>;
+      user_mods: TableConfig<UserModRow, Omit<UserModRow, "installed_at">, Partial<Pick<UserModRow, "settings">>>;
     };
     Views: Record<never, never>;
     Functions: Record<never, never>;
