@@ -66,7 +66,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const currentTrack = index >= 0 && index < queue.length ? queue[index] : null;
 
   useEffect(() => {
-    if (!user || !isPlaying || !currentTrack || reportedTrackRef.current === currentTrack.id) return;
+    if (!user || !currentTrack) return;
+    if (!isPlaying) {
+      reportedTrackRef.current = null;
+      void fetchListeningPreference(user.id).then((sharing) => sharing && setListeningActivity(user.id, null, true)).catch(() => undefined);
+      return;
+    }
+    if (reportedTrackRef.current === currentTrack.id) return;
     reportedTrackRef.current = currentTrack.id;
     void fetchListeningPreference(user.id).then((sharing) => sharing && setListeningActivity(user.id, currentTrack.id, true)).catch(() => undefined);
   }, [currentTrack, isPlaying, user]);
