@@ -40,7 +40,7 @@ export async function removeFriendship(id: string): Promise<void> {
   if (error) throw error;
 }
 export async function setListeningActivity(userId: string, trackId: string | null, isSharing: boolean): Promise<void> {
-  const { error } = await getSupabaseClient().from("listening_activity").upsert({ user_id: userId, track_id: trackId, is_sharing: isSharing, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+  const { error } = await getSupabaseClient().from("listening_activity").upsert({ user_id: userId, track_id: trackId, is_sharing: isSharing, updated_at: new Date().toISOString() });
   if (error) throw error;
 }
 export async function fetchListeningPreference(userId: string): Promise<boolean> {
