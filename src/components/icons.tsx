@@ -144,3 +144,10 @@ export function GoogleIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function QueueIcon({ className }: IconProps) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className={className} aria-hidden="true"><path d="M4 6h11M4 12h11M4 18h8M18 16v4M16 18h4" /></svg>;
+}
+export function FullscreenIcon({ className }: IconProps) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5" /></svg>;
+}
