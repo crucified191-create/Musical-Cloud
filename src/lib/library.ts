@@ -2,7 +2,7 @@
 
 import { parseBlob } from "music-metadata";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import type { PlaylistRow, TrackRow, VideoRow } from "@/lib/supabase/types";
+import type { PlaylistRow, TrackRow, VideoPlaylistRow, VideoRow } from "@/lib/supabase/types";
 
 const BUCKET = "media";
 const VIDEO_BUCKET = "videos";
@@ -22,6 +22,14 @@ export type Track = {
   coverUrl: string | null;
   audioPath: string;
   coverPath: string | null;
+};
+
+export type VideoPlaylist = {
+  id: string;
+  ownerId: string;
+  name: string;
+  videoCount: number;
+  createdAt: string;
 };
 
 export type Video = {
@@ -383,4 +391,73 @@ export async function deleteVideo(video: Video): Promise<void> {
   if (error) throw error;
   const removal = await supabase.storage.from(VIDEO_BUCKET).remove([video.videoPath]);
   if (removal.error) throw removal.error;
+}
+
+
+type VideoPlaylistRowWithCount = VideoPlaylistRow & {
+  video_playlist_videos: { count: number }[];
+};
+
+function toVideoPlaylist(row: VideoPlaylistRowWithCount): VideoPlaylist {
+  return {
+    id: row.id,
+    ownerId: row.owner_id,
+    name: row.name,
+    videoCount: row.video_playlist_videos?.[0]?.count ?? 0,
+    createdAt: row.created_at,
+  };
+}
+
+export async function fetchVideoPlaylists(ownerId: string): Promise<VideoPlaylist[]> {
+  const { data, error } = await getSupabaseClient()
+    .from("video_playlists")
+    .select("*, video_playlist_videos(count)")
+    .eq("owner_id", ownerId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data as unknown as VideoPlaylistRowWithCount[]).map(toVideoPlaylist);
+}
+
+export async function createVideoPlaylist(name: string, userId: string): Promise<VideoPlaylist> {
+  const { data, error } = await getSupabaseClient()
+    .from("video_playlists")
+    .insert({ name, owner_id: userId })
+    .select("*, video_playlist_videos(count)")
+    .single();
+  if (error) throw error;
+  return toVideoPlaylist(data as unknown as VideoPlaylistRowWithCount);
+}
+
+export async function fetchVideoIdsInPlaylist(playlistId: string): Promise<string[]> {
+  const { data, error } = await getSupabaseClient()
+    .from("video_playlist_videos")
+    .select("video_id")
+    .eq("playlist_id", playlistId)
+    .order("position", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((entry) => entry.video_id);
+}
+
+export async function addVideoToPlaylist(playlistId: string, videoId: string): Promise<boolean> {
+  const supabase = getSupabaseClient();
+  const { count, error: countError } = await supabase
+    .from("video_playlist_videos")
+    .select("video_id", { count: "exact", head: true })
+    .eq("playlist_id", playlistId);
+  if (countError) throw countError;
+  const { error } = await supabase
+    .from("video_playlist_videos")
+    .insert({ playlist_id: playlistId, video_id: videoId, position: count ?? 0 });
+  if (error?.code === "23505") return false;
+  if (error) throw error;
+  return true;
+}
+
+export async function removeVideoFromPlaylist(playlistId: string, videoId: string): Promise<void> {
+  const { error } = await getSupabaseClient()
+    .from("video_playlist_videos")
+    .delete()
+    .eq("playlist_id", playlistId)
+    .eq("video_id", videoId);
+  if (error) throw error;
 }
