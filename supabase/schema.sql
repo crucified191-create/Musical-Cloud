@@ -228,3 +228,50 @@ drop policy if exists "users update own media" on storage.objects;
 create policy "users update own media" on storage.objects for update to authenticated
   using (bucket_id = 'media' and (select auth.uid())::text = (storage.foldername(name))[1])
   with check (bucket_id = 'media' and (select auth.uid())::text = (storage.foldername(name))[1]);
+
+
+-- Private MP4 library for the View tab. Videos are never public and are served
+-- through short-lived signed URLs only to their owner.
+create table if not exists public.videos (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references public.profiles (id) on delete cascade,
+  title text not null,
+  size bigint not null default 0,
+  video_path text not null unique,
+  created_at timestamptz not null default now()
+);
+create index if not exists videos_owner_idx on public.videos (owner_id, created_at desc);
+
+alter table public.videos enable row level security;
+drop policy if exists "users view own videos" on public.videos;
+create policy "users view own videos" on public.videos for select to authenticated
+  using ((select auth.uid()) = owner_id);
+drop policy if exists "users insert own videos" on public.videos;
+create policy "users insert own videos" on public.videos for insert to authenticated
+  with check ((select auth.uid()) = owner_id);
+drop policy if exists "users delete own videos" on public.videos;
+create policy "users delete own videos" on public.videos for delete to authenticated
+  using ((select auth.uid()) = owner_id);
+grant select, insert, delete on public.videos to authenticated;
+
+insert into storage.buckets (id, name, public) values ('videos', 'videos', false)
+on conflict (id) do update set public = false;
+drop policy if exists "users read own video files" on storage.objects;
+create policy "users read own video files" on storage.objects for select to authenticated
+  using (
+    bucket_id = 'videos'
+    and (storage.foldername(name))[1] = (select auth.uid()::text)
+  );
+drop policy if exists "users upload own video files" on storage.objects;
+create policy "users upload own video files" on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'videos'
+    and (storage.foldername(name))[1] = (select auth.uid()::text)
+    and lower(storage.extension(name)) = 'mp4'
+  );
+drop policy if exists "users delete own video files" on storage.objects;
+create policy "users delete own video files" on storage.objects for delete to authenticated
+  using (
+    bucket_id = 'videos'
+    and (storage.foldername(name))[1] = (select auth.uid()::text)
+  );
