@@ -29,6 +29,7 @@ export type VideoPlaylist = {
   ownerId: string;
   name: string;
   videoCount: number;
+  isPublic: boolean;
   createdAt: string;
 };
 
@@ -404,6 +405,7 @@ function toVideoPlaylist(row: VideoPlaylistRowWithCount): VideoPlaylist {
     ownerId: row.owner_id,
     name: row.name,
     videoCount: row.video_playlist_videos?.[0]?.count ?? 0,
+    isPublic: row.is_public,
     createdAt: row.created_at,
   };
 }
@@ -418,10 +420,14 @@ export async function fetchVideoPlaylists(ownerId: string): Promise<VideoPlaylis
   return (data as unknown as VideoPlaylistRowWithCount[]).map(toVideoPlaylist);
 }
 
-export async function createVideoPlaylist(name: string, userId: string): Promise<VideoPlaylist> {
+export async function createVideoPlaylist(
+  name: string,
+  userId: string,
+  isPublic = false,
+): Promise<VideoPlaylist> {
   const { data, error } = await getSupabaseClient()
     .from("video_playlists")
-    .insert({ name, owner_id: userId })
+    .insert({ name, owner_id: userId, is_public: isPublic })
     .select("*, video_playlist_videos(count)")
     .single();
   if (error) throw error;
@@ -460,4 +466,53 @@ export async function removeVideoFromPlaylist(playlistId: string, videoId: strin
     .eq("playlist_id", playlistId)
     .eq("video_id", videoId);
   if (error) throw error;
+}
+
+
+export async function setVideoPlaylistVisibility(
+  playlistId: string,
+  isPublic: boolean,
+): Promise<void> {
+  const { error } = await getSupabaseClient()
+    .from("video_playlists")
+    .update({ is_public: isPublic })
+    .eq("id", playlistId);
+  if (error) throw error;
+}
+
+export async function fetchVideoPlaylist(
+  playlistId: string,
+): Promise<{ playlist: VideoPlaylist; videos: Video[] } | null> {
+  const supabase = getSupabaseClient();
+  const { data: playlistRow, error: playlistError } = await supabase
+    .from("video_playlists")
+    .select("*, video_playlist_videos(count)")
+    .eq("id", playlistId)
+    .maybeSingle();
+  if (playlistError) throw playlistError;
+  if (!playlistRow) return null;
+
+  const { data: entries, error: entriesError } = await supabase
+    .from("video_playlist_videos")
+    .select("video_id")
+    .eq("playlist_id", playlistId)
+    .order("position", { ascending: true });
+  if (entriesError) throw entriesError;
+  const videoIds = (entries ?? []).map((entry) => entry.video_id);
+  if (videoIds.length === 0) {
+    return { playlist: toVideoPlaylist(playlistRow as unknown as VideoPlaylistRowWithCount), videos: [] };
+  }
+  const { data: videoRows, error: videosError } = await supabase
+    .from("videos")
+    .select("*")
+    .in("id", videoIds);
+  if (videosError) throw videosError;
+  const rowById = new Map((videoRows as VideoRow[]).map((video) => [video.id, video]));
+  return {
+    playlist: toVideoPlaylist(playlistRow as unknown as VideoPlaylistRowWithCount),
+    videos: await Promise.all(videoIds.flatMap((id) => {
+      const row = rowById.get(id);
+      return row ? [toVideo(row)] : [];
+    })),
+  };
 }
