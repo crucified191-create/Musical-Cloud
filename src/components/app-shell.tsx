@@ -15,6 +15,7 @@ const NAV = [
   { href: "/", label: "Your library" },
   { href: "/search", label: "Search" },
   { href: "/browse", label: "Browse" },
+  { href: "/view", label: "View" },
   { href: "/settings", label: "Settings" },
 ];
 const MIN_SIDEBAR_WIDTH = 208;
