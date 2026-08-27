@@ -275,3 +275,43 @@ create policy "users delete own video files" on storage.objects for delete to au
     bucket_id = 'videos'
     and (storage.foldername(name))[1] = (select auth.uid()::text)
   );
+
+
+-- Private video playlists organize uploads by anime, season, or any collection.
+create table if not exists public.video_playlists (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references public.profiles (id) on delete cascade,
+  name text not null check (char_length(trim(name)) between 1 and 120),
+  created_at timestamptz not null default now()
+);
+create table if not exists public.video_playlist_videos (
+  playlist_id uuid not null references public.video_playlists (id) on delete cascade,
+  video_id uuid not null references public.videos (id) on delete cascade,
+  position integer not null default 0,
+  added_at timestamptz not null default now(),
+  primary key (playlist_id, video_id)
+);
+create index if not exists video_playlists_owner_idx on public.video_playlists (owner_id, created_at desc);
+create index if not exists video_playlist_videos_playlist_idx on public.video_playlist_videos (playlist_id, position);
+
+alter table public.video_playlists enable row level security;
+alter table public.video_playlist_videos enable row level security;
+drop policy if exists "users manage own video playlists" on public.video_playlists;
+create policy "users manage own video playlists" on public.video_playlists for all to authenticated
+  using ((select auth.uid()) = owner_id)
+  with check ((select auth.uid()) = owner_id);
+drop policy if exists "users manage own video playlist entries" on public.video_playlist_videos;
+create policy "users manage own video playlist entries" on public.video_playlist_videos for all to authenticated
+  using (exists (
+    select 1 from public.video_playlists playlist
+    where playlist.id = playlist_id and playlist.owner_id = (select auth.uid())
+  ))
+  with check (exists (
+    select 1 from public.video_playlists playlist
+    join public.videos video on video.id = video_id
+    where playlist.id = playlist_id
+      and playlist.owner_id = (select auth.uid())
+      and video.owner_id = (select auth.uid())
+  ));
+grant select, insert, update, delete on public.video_playlists to authenticated;
+grant select, insert, update, delete on public.video_playlist_videos to authenticated;
