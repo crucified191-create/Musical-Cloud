@@ -2,9 +2,11 @@
 
 import { parseBlob } from "music-metadata";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import type { PlaylistRow, TrackRow } from "@/lib/supabase/types";
+import type { PlaylistRow, TrackRow, VideoRow } from "@/lib/supabase/types";
 
 const BUCKET = "media";
+const VIDEO_BUCKET = "videos";
+const VIDEO_EXTENSIONS = /\.mp4$/i;
 const AUDIO_EXTENSIONS = /\.(mp3|m4a|aac|ogg|oga|opus|wav|flac|webm)$/i;
 
 export type Track = {
@@ -20,6 +22,16 @@ export type Track = {
   coverUrl: string | null;
   audioPath: string;
   coverPath: string | null;
+};
+
+export type Video = {
+  id: string;
+  ownerId: string;
+  title: string;
+  size: number;
+  videoPath: string;
+  videoUrl: string;
+  createdAt: string;
 };
 
 export type Playlist = {
@@ -302,4 +314,73 @@ export async function addTracksToPlaylist(playlistId: string, trackIds: string[]
   );
   if (error) throw error;
   return additions.length;
+}
+
+
+export function isMp4File(file: File): boolean {
+  return file.type === "video/mp4" || VIDEO_EXTENSIONS.test(file.name);
+}
+
+async function toVideo(row: VideoRow): Promise<Video> {
+  const { data, error } = await getSupabaseClient()
+    .storage
+    .from(VIDEO_BUCKET)
+    .createSignedUrl(row.video_path, 60 * 60 * 24);
+  if (error || !data?.signedUrl) throw error ?? new Error("Could not prepare video playback.");
+  return {
+    id: row.id,
+    ownerId: row.owner_id,
+    title: row.title,
+    size: row.size,
+    videoPath: row.video_path,
+    videoUrl: data.signedUrl,
+    createdAt: row.created_at,
+  };
+}
+
+export async function fetchVideos(ownerId: string): Promise<Video[]> {
+  const { data, error } = await getSupabaseClient()
+    .from("videos")
+    .select("*")
+    .eq("owner_id", ownerId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return Promise.all((data as VideoRow[]).map(toVideo));
+}
+
+export async function uploadVideo(file: File, userId: string): Promise<Video> {
+  if (!isMp4File(file)) throw new Error("Choose an MP4 video file.");
+  const supabase = getSupabaseClient();
+  const id = crypto.randomUUID();
+  const videoPath = `${userId}/${id}.mp4`;
+  const upload = await supabase.storage.from(VIDEO_BUCKET).upload(videoPath, file, {
+    contentType: "video/mp4",
+    upsert: false,
+  });
+  if (upload.error) throw upload.error;
+
+  const { data, error } = await supabase
+    .from("videos")
+    .insert({
+      id,
+      owner_id: userId,
+      title: stripExtension(file.name),
+      size: file.size,
+      video_path: videoPath,
+    })
+    .select("*")
+    .single();
+  if (error) {
+    await supabase.storage.from(VIDEO_BUCKET).remove([videoPath]);
+    throw error;
+  }
+  return toVideo(data as VideoRow);
+}
+
+export async function deleteVideo(video: Video): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("videos").delete().eq("id", video.id);
+  if (error) throw error;
+  const removal = await supabase.storage.from(VIDEO_BUCKET).remove([video.videoPath]);
+  if (removal.error) throw removal.error;
 }
