@@ -55,6 +55,15 @@ export type TrackLyricsRow = {
   updated_at: string;
 };
 
+export type VideoRow = {
+  id: string;
+  owner_id: string;
+  title: string;
+  size: number;
+  video_path: string;
+  created_at: string;
+};
+
 export type UserModRow = {
   user_id: string;
   mod_id: string;
@@ -79,6 +88,7 @@ export type Database = {
       friendships: TableConfig<FriendshipRow, Omit<FriendshipRow, "id" | "created_at" | "status"> & { status?: FriendshipRow["status"] }, Partial<Pick<FriendshipRow, "status">>>;
       listening_activity: TableConfig<ListeningActivityRow, Omit<ListeningActivityRow, "updated_at"> & { updated_at?: string }, Partial<Pick<ListeningActivityRow, "track_id" | "is_sharing" | "updated_at">>>;
       track_lyrics: TableConfig<TrackLyricsRow, Omit<TrackLyricsRow, "updated_at"> & { updated_at?: string }, Partial<Pick<TrackLyricsRow, "content" | "updated_at">>>;
+      videos: TableConfig<VideoRow, Omit<VideoRow, "id" | "created_at"> & { id?: string }, Partial<Pick<VideoRow, "title">>>;
       user_mods: TableConfig<UserModRow, Omit<UserModRow, "installed_at">, Partial<Pick<UserModRow, "settings">>>;
     };
     Views: Record<never, never>;
