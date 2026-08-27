@@ -64,6 +64,20 @@ export type VideoRow = {
   created_at: string;
 };
 
+export type VideoPlaylistRow = {
+  id: string;
+  owner_id: string;
+  name: string;
+  created_at: string;
+};
+
+export type VideoPlaylistVideoRow = {
+  playlist_id: string;
+  video_id: string;
+  position: number;
+  added_at: string;
+};
+
 export type UserModRow = {
   user_id: string;
   mod_id: string;
@@ -89,6 +103,8 @@ export type Database = {
       listening_activity: TableConfig<ListeningActivityRow, Omit<ListeningActivityRow, "updated_at"> & { updated_at?: string }, Partial<Pick<ListeningActivityRow, "track_id" | "is_sharing" | "updated_at">>>;
       track_lyrics: TableConfig<TrackLyricsRow, Omit<TrackLyricsRow, "updated_at"> & { updated_at?: string }, Partial<Pick<TrackLyricsRow, "content" | "updated_at">>>;
       videos: TableConfig<VideoRow, Omit<VideoRow, "id" | "created_at"> & { id?: string }, Partial<Pick<VideoRow, "title">>>;
+      video_playlists: TableConfig<VideoPlaylistRow, Omit<VideoPlaylistRow, "id" | "created_at"> & { id?: string }, Partial<Pick<VideoPlaylistRow, "name">>>;
+      video_playlist_videos: TableConfig<VideoPlaylistVideoRow, Omit<VideoPlaylistVideoRow, "added_at" | "position"> & { position?: number }, Partial<Pick<VideoPlaylistVideoRow, "position">>>;
       user_mods: TableConfig<UserModRow, Omit<UserModRow, "installed_at">, Partial<Pick<UserModRow, "settings">>>;
     };
     Views: Record<never, never>;
